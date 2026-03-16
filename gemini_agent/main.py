@@ -20,9 +20,9 @@ from pathlib import Path
 # HTTP 서버 (Cloud Run 헬스체크용)
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-# Gemini SDK
-import google.generativeai as genai
-from google.generativeai.types import LiveConnectConfig, SpeechConfig, VoiceConfig
+# Gemini SDK (신규 패키지)
+from google import genai
+from google.genai import types
 
 # 자세 상태 브릿지
 sys.path.insert(0, str(Path(__file__).parent))
@@ -52,13 +52,14 @@ async def run_agent():
         print("[ERROR] GOOGLE_API_KEY 환경변수를 설정하세요.")
         sys.exit(1)
 
-    genai.configure(api_key=API_KEY)
-    client = genai.Client()
+    client = genai.Client(api_key=API_KEY)
 
-    config = LiveConnectConfig(
+    config = types.LiveConnectConfig(
         response_modalities=["AUDIO"],
-        speech_config=SpeechConfig(
-            voice_config=VoiceConfig(prebuilt_voice_config={"voice_name": "Kore"})
+        speech_config=types.SpeechConfig(
+            voice_config=types.VoiceConfig(
+                prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Kore")
+            )
         ),
         system_instruction=SYSTEM_PROMPT,
     )
@@ -79,7 +80,6 @@ async def run_agent():
                 # 음성 응답 수신 및 재생
                 async for response in session.receive():
                     if response.data:
-                        # 오디오 바이트 → 스피커 출력
                         _play_audio(response.data)
                     if response.text:
                         print(f"[목이] {response.text}")
