@@ -49,8 +49,9 @@ SYSTEM_PROMPT = """
 async def run_agent():
     """Gemini Live Agent 메인 루프"""
     if not API_KEY:
-        print("[ERROR] GOOGLE_API_KEY 환경변수를 설정하세요.")
-        sys.exit(1)
+        print("[WARNING] GOOGLE_API_KEY 없음 — agent 비활성화, HTTP 서버만 유지")
+        while True:
+            await asyncio.sleep(60)
 
     client = genai.Client(api_key=API_KEY)
 
@@ -121,7 +122,9 @@ def start_http_server():
 
 
 if __name__ == "__main__":
-    # HTTP 서버를 백그라운드 스레드로 실행 (Cloud Run 헬스체크)
+    # HTTP 서버를 백그라운드 스레드로 먼저 실행 (Cloud Run 헬스체크)
+    import time
     t = threading.Thread(target=start_http_server, daemon=True)
     t.start()
+    time.sleep(1)  # HTTP 서버가 포트 점유할 때까지 대기
     asyncio.run(run_agent())
