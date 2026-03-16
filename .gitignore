@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+profile.json
+logs/
+*.mp4
+*.png
+*.jpg
+swarm/results/idea_13_wave/results/viz/__pycache__/
