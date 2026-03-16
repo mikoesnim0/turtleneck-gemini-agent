@@ -14,8 +14,11 @@ main.py — TurtleNeck Gemini Live Agent
 import asyncio
 import os
 import sys
-import time
+import threading
 from pathlib import Path
+
+# HTTP 서버 (Cloud Run 헬스체크용)
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # Gemini SDK
 import google.generativeai as genai
@@ -100,5 +103,25 @@ def _play_audio(audio_bytes: bytes):
         print(f"[목이] 오디오 저장됨: {out}")
 
 
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        stage = posture_state.get("stage", "UNKNOWN")
+        self.wfile.write(f"TurtleNeck Agent running | stage={stage}\n".encode())
+    def log_message(self, format, *args):
+        pass  # suppress access logs
+
+
+def start_http_server():
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(("0.0.0.0", port), HealthHandler)
+    print(f"[서버] HTTP 헬스체크 포트 {port} 시작")
+    server.serve_forever()
+
+
 if __name__ == "__main__":
+    # HTTP 서버를 백그라운드 스레드로 실행 (Cloud Run 헬스체크)
+    t = threading.Thread(target=start_http_server, daemon=True)
+    t.start()
     asyncio.run(run_agent())
